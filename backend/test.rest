@@ -1,0 +1,265 @@
+@baseUrl = https://accountsmanage.kingfishlogistics.in/api
+
+
+POST {{baseUrl}}/company/create
+Content-Type: application/json
+
+{
+  "name": "Demo Company",
+  "financial_year": "2025-26",
+  "gst_enabled": 1,
+  "state": "Rajasthan"
+}
+
+###
+GET {{baseUrl}}/contra
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjb21wYW55X2lkIjo4LCJyb2xlIjoiY29tcGFueSIsImlhdCI6MTc3MjAxNDM3MywiZXhwIjoxNzcyNjE5MTczfQ.c26ximN9iHNHA3LkV3tVEQp6uMZZEjpJaEGHxqbTuSc
+
+
+###
+GET {{baseUrl}}/dashboard
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjb21wYW55X2lkIjo4LCJyb2xlIjoiY29tcGFueSIsImlhdCI6MTc3NDI0OTY5NCwiZXhwIjoxNzc0MzM2MDk0fQ.RviAe7vyRwpXt8u9oVXKdfmM7G3nUq0oO6ELwFu6hJ8
+
+
+###
+POST {{baseUrl}}/group/create
+Content-Type: application/json
+
+{
+  "company_id": 1,
+  "name": "Assets",
+  "parent_id": null,
+  "nature": "ASSET"
+}
+
+
+###
+POST {{baseUrl}}/group/create
+Content-Type: application/json
+
+{
+  "company_id": 1,
+  "name": "Liabilities",
+  "parent_id": null,
+  "nature": "LIABILITY"
+}
+
+
+###
+POST {{baseUrl}}/group/create
+Content-Type: application/json
+
+{
+  "company_id": 1,
+  "name": "Income",
+  "parent_id": null,
+  "nature": "INCOME"
+}
+
+###
+POST {{baseUrl}}/group/create
+Content-Type: application/json
+
+{
+  "company_id": 1,
+  "name": "Expenses",
+  "parent_id": null,
+  "nature": "EXPENSE"
+}
+
+
+
+###
+GET {{baseUrl}}/group/1
+
+
+###
+POST {{baseUrl}}/ledger/create
+Content-Type: application/json
+
+{
+  "company_id": 1,
+  "group_id": 5,
+  "name": "Cash",
+  "opening_balance": 0,
+  "dr_cr": "DR"
+}
+
+###
+POST {{baseUrl}}/ledger/create
+Content-Type: application/json
+
+{
+  "company_id": 1,
+  "group_id": 5,
+  "name": "Capital",
+  "opening_balance": 0,
+  "dr_cr": "CR"
+}
+
+###
+POST {{baseUrl}}/ledger/create
+Content-Type: application/json
+
+{
+  "company_id": 1,
+  "group_id": 6,
+  "name": "Sales",
+  "opening_balance": 0,
+  "dr_cr": "CR"
+}
+
+###
+POST {{baseUrl}}/ledger/create
+Content-Type: application/json
+
+{
+  "company_id": 1,
+  "group_id": 7,
+  "name": "Purchase",
+  "opening_balance": 0,
+  "dr_cr": "DR"
+}
+
+
+###
+GET {{baseUrl}}/ledger/1
+
+
+
+###
+POST {{baseUrl}}/voucher/create
+Content-Type: application/json
+
+{
+  "company_id": 1,
+  "voucher_type": "JOURNAL",
+  "voucher_date": "2025-01-10",
+  "narration": "Capital introduced",
+  "entries": [
+    {
+      "ledger_id": 1,
+      "debit": 10000,
+      "credit": 0
+    },
+    {
+      "ledger_id": 2,
+      "debit": 0,
+      "credit": 10000
+    }
+  ]
+}
+
+
+###
+
+
+
+###
+GET {{baseUrl}}/voucher/company/8
+
+###
+DELETE {{baseUrl}}/voucher/1
+
+###
+GET {{baseUrl}}/report/trial-balance/1
+
+###
+GET {{baseUrl}}/report/profit-loss/1
+
+###
+GET {{baseUrl}}/report/balance-sheet/1
+
+
+
+
+
+
+
+###
+POST https://graph.facebook.com/v17.0/998244376701312/messages
+Authorization:Bearer EABDWkmoEUMkBQkTymT7MNUDcOAzVBI9JcDi6XZAwe1jl1ZANQT8IoZAk3EoBjsx9Wi0UIsQHwY5A90KcREWegLyS1O5KmhwGQ6zxFfWrM6AtEh1VdObyBgpAz1fZCsZBblShfq2COu2NGHqRvHTYv3LPKj6ocbCarHTOkPo2zl5FTpvnyGgRfscU9evkh7Em4TQZDZD
+Content-Type: application/json
+
+
+{
+  "messaging_product": "whatsapp",
+  "to": "6367190820",
+  "type": "text",
+  "text": {
+    "body": "Hello from Doctor Plus Pharmacy!"
+  }
+}
+
+
+
+###
+GET https://accountsmanage.kingfishlogistics.in/api/master/getCities
+
+
+
+###
+GET http://localhost:8000/api/voucher/report
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjb21wYW55X2lkIjo4LCJyb2xlIjoiY29tcGFueSIsImlhdCI6MTc3MzIyMTk2MCwiZXhwIjoxNzczODI2NzYwfQ.ZXwA2TVyAC9SPyPxxuBQEzV_bT5FAQFORQAlH0RKCus
+
+
+
+###
+GET http://localhost:8000/api/debit-note/report
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjb21wYW55X2lkIjo4LCJyb2xlIjoiY29tcGFueSIsImlhdCI6MTc3MzIyMTk2MCwiZXhwIjoxNzczODI2NzYwfQ.ZXwA2TVyAC9SPyPxxuBQEzV_bT5FAQFORQAlH0RKCus
+
+
+
+###
+GET http://localhost:8000/api/contra/report
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjb21wYW55X2lkIjo4LCJyb2xlIjoiY29tcGFueSIsImlhdCI6MTc3MzIyMTk2MCwiZXhwIjoxNzczODI2NzYwfQ.ZXwA2TVyAC9SPyPxxuBQEzV_bT5FAQFORQAlH0RKCus
+
+
+
+
+### ADD GST
+POST http://localhost:8000/api/gst-master/add-gst
+Content-Type: application/json
+
+{
+  "company_id": 8,
+  "address": "Sector 4 Vidhyadhar Nagar",
+  "pincode": "302039",
+  "city": "Jaipur",
+  "state": "Rajasthan",
+  "contact_no": "9999999999",
+  "email": "info@test.com",
+  "gst_number": "08AAACC1206D1ZG",
+  "pennumber": "AAACC1206D"
+}
+
+
+###
+GET http://localhost:8000/api/bank?company_id=8
+
+
+
+
+
+###
+GET https://accountsmanage.kingfishlogistics.in/api/bank?company_id=7
+
+
+
+
+### CREATE CONTRA (Single Entry)
+POST https://accountsmanage.kingfishlogistics.in/api/contra
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjb21wYW55X2lkIjo4LCJyb2xlIjoiY29tcGFueSIsImlhdCI6MTc3NjIzMDY1MSwiZXhwIjoxNzc2MzE3MDUxfQ.MqPO_G3JwX1Gx9r7uQ4ZC0Y-hgW_tlNpfW4bVvh_phQ
+
+{
+  "bank_id": 1,
+  "transaction_date": "2026-04-15",
+  "amount": 5000,
+  "opening_balance":200,
+  "entry_type": "Cr",
+  "narration": "Test deposit"
+}
