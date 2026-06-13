@@ -8,7 +8,7 @@ async function getSaleGroupId(conn, company_id) {
     `
     SELECT id 
     FROM groups_master 
-    WHERE name = 'Sales Accounts'
+    WHERE system_code = 'SALES_ACCOUNTS'
     AND company_id = ?
     LIMIT 1
     `,
@@ -101,7 +101,7 @@ exports.createSale = async (req, res) => {
 
 
         const [[group]] = await conn.execute(
-          `SELECT id FROM groups_master WHERE company_id = ? AND LOWER(name) = 'sundry debtors' LIMIT 1`,
+          `SELECT id FROM groups_master WHERE company_id = ? AND system_code = 'SUNDRY_DEBTORS' LIMIT 1`,
           [company_id],
         );
 
@@ -302,7 +302,7 @@ exports.createSale = async (req, res) => {
       let cashBankLedgerId = 0;
       if (payment_type === "CASH") {
         const [[cashGrp]] = await conn.execute(
-          `SELECT id FROM groups_master WHERE company_id=? AND name='Cash-in-Hand' LIMIT 1`,
+          `SELECT id FROM groups_master WHERE company_id=? AND system_code='CASH_IN_HAND' LIMIT 1`,
           [company_id],
         );
         cashBankLedgerId = cashGrp?.id || 0;
@@ -552,7 +552,7 @@ exports.bulkCreateSale = async (req, res) => {
         let cashBankLedgerId = 0;
         if (s.payment_type === "CASH") {
           const [[cashGrp]] = await conn.execute(
-            `SELECT id FROM groups_master WHERE company_id=? AND name='Cash-in-Hand' LIMIT 1`,
+            `SELECT id FROM groups_master WHERE company_id=? AND system_code='CASH_IN_HAND' LIMIT 1`,
             [company_id],
           );
           cashBankLedgerId = cashGrp?.id || 0;
@@ -584,7 +584,27 @@ exports.bulkCreateSale = async (req, res) => {
   } catch (err) {
     await conn.rollback();
     console.error("Bulk upload error:", err);
-    res.status(500).json({ success: false, error: err.message });
+
+    let errorMsg = err.message || "Unknown error occurred";
+    
+    // Professional English error mapping
+    if (errorMsg.includes("Column 'ledger_id' cannot be null")) {
+      errorMsg = "Ledger missing. The system could not assign a ledger to this party. If this party was previously deleted, please use a slightly different party name in your Excel file.";
+    } else if (errorMsg.includes("Duplicate entry") || err.code === "ER_DUP_ENTRY") {
+      errorMsg = "Duplicate entry detected. This Invoice Number, GST, or Mobile number already exists in the system.";
+    } else if (err.code === "ER_BAD_FIELD_ERROR" || errorMsg.includes("Unknown column")) {
+      errorMsg = "Database schema error. A required column is missing from the database.";
+    } else if (err.code === "ER_NO_REFERENCED_ROW_2" || errorMsg.includes("foreign key constraint fails")) {
+      errorMsg = "Invalid reference. A value provided in the Excel file (such as Item or State) does not exist in the system.";
+    } else if (errorMsg.includes("Data too long for column")) {
+      errorMsg = "Data length exceeded. One of the columns in your Excel file contains text that exceeds the maximum allowed length.";
+    } else if (errorMsg.includes("Incorrect decimal value") || errorMsg.includes("Incorrect integer value")) {
+      errorMsg = "Invalid data format. A numeric or amount field contains invalid characters (e.g., text instead of numbers).";
+    } else if (errorMsg.includes("Party not selected")) {
+      errorMsg = "Missing required information. Please ensure the Party Name is present for all records.";
+    }
+
+    res.status(500).json({ success: false, error: errorMsg });
   } finally {
     conn.release();
   }
@@ -637,7 +657,7 @@ exports.listSales = async (req, res) => {
          WHERE le.source_type = 'SALE_BILL' 
            AND le.credit > 0
            /* EXCLUDE SALES ACCOUNT */
-           AND le.ledger_id NOT IN (SELECT id FROM groups_master WHERE name = 'Sales Accounts')
+           AND le.ledger_id NOT IN (SELECT id FROM groups_master WHERE system_code = 'SALES_ACCOUNTS')
          GROUP BY le.source_id, le.company_id, le.party_id
        ) payments ON payments.source_id = sb.invoice_no 
                  AND payments.company_id = sb.company_id 

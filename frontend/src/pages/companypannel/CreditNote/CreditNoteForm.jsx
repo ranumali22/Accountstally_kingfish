@@ -69,19 +69,12 @@ const FloatingSelect = ({ label, required, value, onChange, options }) => (
 
 export default function CreditNoteForm() {
   const navigate = useNavigate();
-
   const [params] = useSearchParams();
-
   const credit_note_no_param = params.get("credit_note_no");
-
   const isEdit = !!credit_note_no_param;
-
   const companyData = JSON.parse(localStorage.getItem("company_data") || "{}");
-
   const companyId = companyData.id;
-
   const [creditNoteNo, setCreditNoteNo] = useState("");
-
   const [voucherDate, setVoucherDate] = useState(
     new Date().toISOString().slice(0, 10),
   );
@@ -114,14 +107,6 @@ export default function CreditNoteForm() {
       amount: 0,
     },
   ]);
-
-  // useEffect(() => {
-  //   if (isEdit) return;
-
-  //   getNextCreditNoteNo(companyId).then((res) =>
-  //     setCreditNoteNo(res.data.credit_note_no),
-  //   );
-  // }, []);
 
 
   useEffect(() => {
@@ -430,6 +415,7 @@ INVOICE SELECT → AUTO FILL ITEMS
         await updateCreditNote(creditNoteNo, payload);
         showSuccess("Credit Note updated successfully");
       } else {
+        console.log("PAYLOAD", payload);
         await createCreditNote(payload);
         showSuccess("Credit Note created successfully");
       }
@@ -483,7 +469,7 @@ INVOICE SELECT → AUTO FILL ITEMS
     // 🔥 new credit note number bhi le aao
     const res = await getNextCreditNoteNo(companyId);
     const fullNo = res.data.credit_note_no;
-    
+
     const match = fullNo.match(/^(.*?)(\d+)$/);
     if (match) {
       setCreditNotePrefix(match[1]);

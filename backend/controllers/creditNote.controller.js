@@ -15,7 +15,7 @@ async function getSalesReturnLedgerId(conn, company_id) {
     SELECT p.id 
     FROM party p
     JOIN groups_master g ON g.id = p.group_id
-    WHERE (g.name LIKE '%Sales%' OR g.name LIKE '%Income%')
+    WHERE g.system_code IN ('SALES_ACCOUNTS', 'SALES_RETURN', 'DIRECT_INCOMES', 'INDIRECT_INCOMES')
       AND p.company_id = ?
     LIMIT 1
   `,
@@ -603,74 +603,162 @@ exports.getCreditNoteById = async (req, res) => {
   }
 };
 
+// exports.deleteCreditNote = async (req, res) => {
+//   const conn = await db.getConnection();
+
+//   try {
+//     let { credit_note_no } = req.params;
+//     if (!credit_note_no) {
+//       credit_note_no = req.query.credit_note_no;
+//     }
+//     if (Array.isArray(credit_note_no)) {
+//       credit_note_no = credit_note_no.join('/');
+//     }
+
+//     await conn.beginTransaction();
+
+//     const [[cn]] = await conn.query(
+//       `
+//       SELECT sale_invoice_no, total_amount
+//       FROM credit_note
+//       WHERE credit_note_no=?
+//     `,
+//       [credit_note_no],
+//     );
+
+//     if (!cn) throw new Error("Credit Note not found");
+
+//     // delete credit note
+//     await conn.execute(
+//       `
+//       UPDATE credit_note
+//       SET status='deleted', deleted_at=NOW()
+//       WHERE credit_note_no=?
+//     `,
+//       [credit_note_no],
+//     );
+
+//     // delete ledger entries
+//     await conn.execute(
+//       `
+//       UPDATE ledger_entries
+//       SET status='deleted', deleted_at=NOW()
+//       WHERE source_type='CREDIT_NOTE'
+//       AND source_id=?
+//     `,
+//       [credit_note_no],
+//     );
+
+//     // restore sale due
+//     await conn.execute(
+//       `
+//       UPDATE sale_bill
+//       SET due_amount = due_amount + ?
+//       WHERE invoice_no = ?
+//     `,
+//       [cn.total_amount, cn.sale_invoice_no],
+//     );
+
+//     await conn.commit();
+
+//     res.json({
+//       success: true,
+//       message: "Credit Note deleted",
+//     });
+//   } catch (err) {
+//     await conn.rollback();
+
+//     res.status(500).json({
+//       error: err.message,
+//     });
+//   } finally {
+//     conn.release();
+//   }
+// };
+
+
 exports.deleteCreditNote = async (req, res) => {
   const conn = await db.getConnection();
 
   try {
     let { credit_note_no } = req.params;
+
     if (!credit_note_no) {
       credit_note_no = req.query.credit_note_no;
     }
+
     if (Array.isArray(credit_note_no)) {
-      credit_note_no = credit_note_no.join('/');
+      credit_note_no = credit_note_no.join("/");
     }
 
     await conn.beginTransaction();
 
     const [[cn]] = await conn.query(
       `
-      SELECT sale_invoice_no, total_amount
+      SELECT sale_invoice_no,total_amount
       FROM credit_note
-      WHERE credit_note_no=?
-    `,
-      [credit_note_no],
+      WHERE credit_note_no = ?
+      `,
+      [credit_note_no]
     );
 
-    if (!cn) throw new Error("Credit Note not found");
+    if (!cn) {
+      throw new Error("Credit Note not found");
+    }
 
-    // delete credit note
-    await conn.execute(
-      `
-      UPDATE credit_note
-      SET status='deleted', deleted_at=NOW()
-      WHERE credit_note_no=?
-    `,
-      [credit_note_no],
-    );
-
-    // delete ledger entries
-    await conn.execute(
-      `
-      UPDATE ledger_entries
-      SET status='deleted', deleted_at=NOW()
-      WHERE source_type='CREDIT_NOTE'
-      AND source_id=?
-    `,
-      [credit_note_no],
-    );
-
-    // restore sale due
+    // Restore due amount
     await conn.execute(
       `
       UPDATE sale_bill
       SET due_amount = due_amount + ?
       WHERE invoice_no = ?
-    `,
-      [cn.total_amount, cn.sale_invoice_no],
+      `,
+      [cn.total_amount, cn.sale_invoice_no]
+    );
+
+    // Delete all ledger entries of this credit note
+    await conn.execute(
+      `
+      DELETE FROM ledger_entries
+      WHERE source_type='CREDIT_NOTE'
+      AND source_id=?
+      `,
+      [credit_note_no]
+    );
+
+    // Delete all item rows
+    await conn.execute(
+      `
+      DELETE FROM credit_note_items
+      WHERE credit_note_no=?
+      `,
+      [credit_note_no]
+    );
+
+    // Delete credit note header
+    await conn.execute(
+      `
+      DELETE FROM credit_note
+      WHERE credit_note_no=?
+      `,
+      [credit_note_no]
     );
 
     await conn.commit();
 
-    res.json({
+    return res.json({
       success: true,
-      message: "Credit Note deleted",
+      message: "Credit Note deleted successfully"
     });
+
   } catch (err) {
     await conn.rollback();
 
-    res.status(500).json({
-      error: err.message,
+    return res.status(500).json({
+      success: false,
+      error: err.message
     });
+
   } finally {
     conn.release();
   }

@@ -1,123 +1,3 @@
-// import { useEffect, useState } from "react";
-// import api from "../../../api";
-
-// export default function TrialBalance() {
-//   const COMPANY_ID = JSON.parse(
-//     localStorage.getItem("company_data")
-//   )?.id;
-
-//   const [rows, setRows] = useState([]);
-
-//   useEffect(() => {
-//     if (COMPANY_ID) {
-//       loadTrialBalance();
-//     }
-//   }, [COMPANY_ID]);
-
-//   const loadTrialBalance = async () => {
-//     try {
-//       const res = await api.get(
-//         `/report/trial-balance/${COMPANY_ID}`
-//       );
-//       setRows(res.data || []);
-//     } catch (err) {
-//       console.error("Trial Balance error:", err);
-//     }
-//   };
-
-//   const totalDebit = rows.reduce(
-//     (s, r) => s + Number(r.debit || 0),
-//     0
-//   );
-
-//   const totalCredit = rows.reduce(
-//     (s, r) => s + Number(r.credit || 0),
-//     0
-//   );
-
-//   const isMatched =
-//     totalDebit.toFixed(2) === totalCredit.toFixed(2);
-
-//   return (
-//     <div className="max-w-6xl mx-auto p-6">
-//       <h2 className="text-xl font-semibold mb-4">
-//         Trial Balance
-//       </h2>
-
-//       {rows.length === 0 && (
-//         <div className="mb-4 p-3 bg-gray-100 text-sm text-gray-600 rounded">
-//           No transactions available for this company
-//         </div>
-//       )}
-
-//       <div className="border rounded-lg overflow-hidden">
-//         <table className="w-full text-sm">
-//           <thead className="bg-gray-100">
-//             <tr>
-//               <th className="border px-3 py-2 text-left">
-//                 Ledger
-//               </th>
-//               <th className="border px-3 py-2 text-right">
-//                 Debit
-//               </th>
-//               <th className="border px-3 py-2 text-right">
-//                 Credit
-//               </th>
-//             </tr>
-//           </thead>
-
-//           <tbody>
-//             {rows.map((r) => (
-//               <tr
-//                 key={r.ledger_id}
-//                 className="hover:bg-gray-50"
-//               >
-//                 <td className="border px-3 py-2">
-//                   {r.ledger_name}
-//                 </td>
-//                 <td className="border px-3 py-2 text-right">
-//                   {Number(r.debit || 0).toFixed(2)}
-//                 </td>
-//                 <td className="border px-3 py-2 text-right">
-//                   {Number(r.credit || 0).toFixed(2)}
-//                 </td>
-//               </tr>
-//             ))}
-//           </tbody>
-
-//           <tfoot className="bg-gray-100 font-semibold">
-//             <tr>
-//               <td className="border px-3 py-2">
-//                 Total
-//               </td>
-//               <td className="border px-3 py-2 text-right">
-//                 {totalDebit.toFixed(2)}
-//               </td>
-//               <td className="border px-3 py-2 text-right">
-//                 {totalCredit.toFixed(2)}
-//               </td>
-//             </tr>
-//           </tfoot>
-//         </table>
-//       </div>
-
-//       {/* ================= MATCH STATUS ================= */}
-//       <div
-//         className={`mt-4 p-3 rounded font-semibold ${
-//           isMatched
-//             ? "bg-green-50 text-green-700"
-//             : "bg-red-50 text-red-700"
-//         }`}
-//       >
-//         {isMatched
-//           ? "✔ Trial Balance Matched"
-//           : "✖ Trial Balance Not Matched"}
-//       </div>
-//     </div>
-//   );
-// }
-
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../../api";
@@ -159,8 +39,8 @@ export default function TrialBalance() {
 
   const displayRows = hideZero
     ? rows.filter(
-        (r) => Number(r.debit || 0) !== 0 || Number(r.credit || 0) !== 0
-      )
+      (r) => Number(r.debit || 0) !== 0 || Number(r.credit || 0) !== 0
+    )
     : rows;
 
   const totalDebit = displayRows.reduce(
@@ -234,7 +114,7 @@ export default function TrialBalance() {
                 <td
                   className="border px-3 py-2 text-blue-600 cursor-pointer hover:underline"
                   onClick={() =>
-                    navigate(`/ledger/${r.ledger_id}`)
+                    navigate(`/ledger?ledger_id=${r.ledger_id}`)
                   }
                 >
                   {r.ledger_name}
@@ -276,11 +156,10 @@ export default function TrialBalance() {
 
       {/* MATCH STATUS */}
       <div
-        className={`mt-4 p-3 rounded font-semibold ${
-          isMatched
+        className={`mt-4 p-3 rounded font-semibold ${isMatched
             ? "bg-green-50 text-green-700"
             : "bg-red-50 text-red-700"
-        }`}
+          }`}
       >
         {isMatched
           ? "✔ Trial Balance is Matching"

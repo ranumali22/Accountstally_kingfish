@@ -23,13 +23,4 @@ router.get("/by-no", companyAuth, controller.getDebitNoteById);
 router.put("/by-no", companyAuth, controller.updateDebitNote);
 router.delete("/by-no", companyAuth, controller.deleteDebitNote);
 
-// SINGLE
-router.get("/*debit_note_no", companyAuth, controller.getDebitNoteById);
-
-// UPDATE
-router.put("/*debit_note_no", companyAuth, controller.updateDebitNote);
-
-// DELETE
-router.delete("/*debit_note_no", companyAuth, controller.deleteDebitNote);
-
 module.exports = router;

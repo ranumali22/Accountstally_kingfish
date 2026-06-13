@@ -5,6 +5,7 @@ import { getDebitNotes, deleteDebitNote, getDebitNoteById, exportDebitNotesJson 
 import { showError, showSuccess } from "../../../components/ui/alert/Alert";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import html2pdf from "html2pdf.js";
 
 const formatDate = (d) => {
   if (!d) return "-";
@@ -34,7 +35,7 @@ export default function DebitNoteList() {
     if (!companyId) return;
     try {
       setLocalLoading(true);
-      const res = await getDebitNotes({ 
+      const res = await getDebitNotes({
         company_id: companyId,
         fromDate: fromDate.toISOString().split('T')[0],
         toDate: toDate.toISOString().split('T')[0]
@@ -425,13 +426,17 @@ export default function DebitNoteList() {
     }
   };
 
+
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this debit note?")) return;
+
     try {
-      await deleteDebitNote(id);
+      await deleteDebitNote(id, companyId);
+
       showSuccess("Deleted successfully");
       loadData();
     } catch (err) {
+      console.error(err);
       showError("Delete failed");
     }
   };
@@ -456,6 +461,52 @@ export default function DebitNoteList() {
     } catch (err) {
       console.error(err);
       showError("Failed to export JSON");
+    } finally {
+      setLocalLoading(false);
+    }
+  };
+
+  const handleDownloadPdf = async (noteNo) => {
+    try {
+      setLocalLoading(true);
+      const res = await getDebitNoteById(noteNo, companyId);
+      const htmlString = await generateInvoiceHtml(res.data);
+
+      const wrapper = document.createElement("div");
+      wrapper.innerHTML = htmlString;
+      
+      const invoiceWrapper = wrapper.querySelector(".invoice-wrapper");
+      if (invoiceWrapper) {
+        invoiceWrapper.style.width = "190mm";
+        invoiceWrapper.style.maxWidth = "190mm";
+      }
+
+      document.body.appendChild(wrapper);
+
+      html2pdf()
+        .from(wrapper)
+        .set({
+          filename: `DebitNote_${noteNo}.pdf`,
+          image: { type: "jpeg", quality: 0.98 },
+          html2canvas: {
+            scale: 2,
+            useCORS: true,
+            scrollX: 0,
+            scrollY: 0,
+          },
+          jsPDF: {
+            unit: "mm",
+            format: "a4",
+            orientation: "portrait",
+          },
+        })
+        .save()
+        .then(() => {
+          document.body.removeChild(wrapper);
+        });
+    } catch (err) {
+      console.error(err);
+      showError("Failed to download PDF");
     } finally {
       setLocalLoading(false);
     }
@@ -495,15 +546,15 @@ export default function DebitNoteList() {
   };
 
   const toggleSelectOne = (noteNo) => {
-    setSelectedNos(prev => 
-      prev.includes(noteNo) 
-        ? prev.filter(no => no !== noteNo) 
+    setSelectedNos(prev =>
+      prev.includes(noteNo)
+        ? prev.filter(no => no !== noteNo)
         : [...prev, noteNo]
     );
   };
 
   const filteredNotes = useMemo(() => {
-    return notes.filter(n => 
+    return notes.filter(n =>
       String(n.debit_note_no || "").toLowerCase().includes(search.toLowerCase()) ||
       String(n.party_name || "").toLowerCase().includes(search.toLowerCase())
     );
@@ -520,7 +571,7 @@ export default function DebitNoteList() {
   return (
     <div className="w-full min-h-screen bg-gray-50 font-sans">
       <div className="max-w-7xl mx-auto p-4 space-y-4">
-        
+
         {/* STATS & FILTER SECTION */}
         <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex flex-wrap items-center gap-3">
@@ -585,8 +636,8 @@ export default function DebitNoteList() {
               <thead className="bg-slate-50 text-slate-500 text-xs font-bold uppercase tracking-wider border-b border-gray-100">
                 <tr>
                   <th className="p-4 text-center w-12">
-                    <input 
-                      type="checkbox" 
+                    <input
+                      type="checkbox"
                       onChange={toggleSelectAll}
                       checked={paginatedNotes.length > 0 && paginatedNotes.every(n => selectedNos.includes(n.debit_note_no))}
                       className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
@@ -610,8 +661,8 @@ export default function DebitNoteList() {
                   paginatedNotes.map((note, idx) => (
                     <tr key={note.id} className="hover:bg-slate-50/50 transition-all">
                       <td className="p-4 text-center">
-                        <input 
-                          type="checkbox" 
+                        <input
+                          type="checkbox"
                           checked={selectedNos.includes(note.debit_note_no)}
                           onChange={() => toggleSelectOne(note.debit_note_no)}
                           className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
@@ -628,7 +679,7 @@ export default function DebitNoteList() {
                           <button onClick={() => handleView(note.debit_note_no)} className="w-8 h-8 flex items-center justify-center bg-gray-50 text-gray-500 rounded-lg hover:bg-gray-100 hover:text-gray-700 transition-all" title="View Debit Note"><Eye size={16} /></button>
                           <button onClick={() => navigate(`/voucher/DNoteForm?debit_note_no=${note.debit_note_no}`)} className="w-8 h-8 flex items-center justify-center bg-blue-50 text-blue-500 rounded-lg hover:bg-blue-100 hover:text-blue-700 transition-all" title="Edit Debit Note"><Pencil size={16} /></button>
                           <button onClick={() => handlePrint(note.debit_note_no)} className="w-8 h-8 flex items-center justify-center bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100 hover:text-emerald-700 transition-all" title="Print Debit Note"><Printer size={16} /></button>
-                          <button onClick={() => handleDownloadSingle(note.debit_note_no)} className="w-8 h-8 flex items-center justify-center bg-orange-50 text-orange-600 rounded-lg hover:bg-orange-100 hover:text-orange-700 transition-all" title="Download E-Invoice JSON"><Download size={16} /></button>
+                          <button onClick={() => handleDownloadPdf(note.debit_note_no)} className="w-8 h-8 flex items-center justify-center bg-orange-50 text-orange-600 rounded-lg hover:bg-orange-100 hover:text-orange-700 transition-all" title="Download Debit Note PDF"><Download size={16} /></button>
                           <button onClick={() => handleDelete(note.debit_note_no)} className="w-8 h-8 flex items-center justify-center bg-rose-50 text-rose-500 rounded-lg hover:bg-rose-100 hover:text-rose-700 transition-all" title="Delete Debit Note"><Trash2 size={16} /></button>
                         </div>
                       </td>
@@ -665,7 +716,7 @@ export default function DebitNoteList() {
               </div>
               <div className="flex items-center gap-2">
                 <button onClick={() => handlePrint(viewNote.header.debit_note_no)} className="flex items-center gap-1.5 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-all font-bold text-xs shadow-md shadow-teal-100"><Printer size={16} />Print Now</button>
-                <button onClick={() => handleDownloadSingle(viewNote.header.debit_note_no)} className="flex items-center gap-1.5 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-all font-bold text-xs shadow-md shadow-orange-100" title="Download E-Invoice JSON"><Download size={16} />Download JSON</button>
+                <button onClick={() => handleDownloadPdf(viewNote.header.debit_note_no)} className="flex items-center gap-1.5 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-all font-bold text-xs shadow-md shadow-orange-100" title="Download Debit Note PDF"><Download size={16} />Download PDF</button>
                 <button onClick={() => setViewNote(null)} className="p-2 bg-gray-50 text-gray-400 rounded-lg hover:bg-rose-50 hover:text-rose-500 transition-all"><X size={20} /></button>
               </div>
             </div>

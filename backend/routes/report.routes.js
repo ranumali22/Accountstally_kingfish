@@ -9,10 +9,10 @@ const {
 
 const { companyAuth } = require("../middleware/companyAuth");
 
-router.get("/trial-balance", companyAuth, trialBalance);
-router.get("/profit-loss", companyAuth, profitLoss);
-router.get("/balance-sheet", companyAuth, balanceSheet);
+router.get("/trial-balance/:companyId", companyAuth, trialBalance);
+router.get("/profit-loss/:companyId", companyAuth, profitLoss);
+router.get("/balance-sheet/:companyId", companyAuth, balanceSheet);
 
-router.get("/day-book", companyAuth, dayBook);
+router.get("/day-book/:companyId", companyAuth, dayBook);
 
 module.exports = router;

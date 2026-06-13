@@ -41,7 +41,7 @@ app.use(
       "https://accounts.kingfishlogistics.in",
       "https://accountsmanage.kingfishlogistics.in"
     ],
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH","OPTIONS"],
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     credentials: true,
   })
 );
@@ -51,6 +51,7 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // ===== ROUTES =====
 const companyRoutes = require("./routes/company.routes");
+const adminRoutes = require("./routes/admin.routes");
 const partyRoutes = require("./routes/party.routes");
 const groupRoutes = require("./routes/group.routes");
 const ledgerRoutes = require("./routes/ledger.routes");
@@ -88,9 +89,10 @@ const shiftMasterRoutes = require("./routes/shift.routes");
 const salarygenRoutes = require("./routes/salary_generate.routes");
 const salarypayRoutes = require("./routes/salary_pay.routes");
 const gstMasterRoutes = require("./routes/gstMaster.routes");
-const dashboardRoutes  = require("./routes/dashboard.routes");
+const dashboardRoutes = require("./routes/dashboard.routes");
 
 
+app.use("/api/admin", adminRoutes);
 app.use("/api/company", companyRoutes);
 app.use("/api/group", groupRoutes);
 app.use("/api/ledger", ledgerRoutes);

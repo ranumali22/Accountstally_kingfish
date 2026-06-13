@@ -34,6 +34,9 @@ API.interceptors.response.use(
 );
 
 export const getDashboardData = () => API.get("/dashboard");
+// Admin Login
+export const adminLogin = (data) =>
+  API.post("/admin/login", data);
 
 export const createCompany = (formData) => {
   return API.post("/company/create", formData);

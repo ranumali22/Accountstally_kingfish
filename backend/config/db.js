@@ -13,8 +13,8 @@ const db = mysql.createPool({
   connectionLimit: 10,
   queueLimit: 0,
 
-  timezone: "+05:30", // 🔥 CRITICAL FIX
-  dateStrings: true, // 🔥 MOST IMPORTANT FIX
+  timezone: "+05:30",
+  dateStrings: true,
 });
 
 db.checkDbConnection = async () => {

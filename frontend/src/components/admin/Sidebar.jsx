@@ -18,39 +18,25 @@ import {
 import { useSidebar } from "../../context/SidebarContext"
 
 const navItems = [
-  {
-    icon: <GridIcon />,
-    name: "Dashboard",
-    subItems: [{ name: "Ecommerce", path: "/", pro: false }]
-  },
+
 
   {
-    name: "Forms",
+    name: "Company List",
     icon: <ListIcon />,
-    subItems: [{ name: "Form Elements", path: "/admin/company-profile", pro: false }]
+    subItems: [{ name: "Company", path: "/admin/company-profile", pro: false }]
   },
 
-  {
-    icon: <BoxCubeIcon />,
-    name: "Masters",
-    subItems: [
-      { name: "Country", path: "/masterscountry", pro: false },
-      { name: "State", path: "/state", pro: false },
-      { name: "City", path: "/city", pro: false },
 
-      { name: "Pincode", path: "/pincode", pro: false }
-    ]
-  }
 ]
 
 const othersItems = [
   {
     icon: <PieChartIcon />,
     name: "Charts",
-    subItems: [
-      { name: "Line Chart", path: "/line-chart", pro: false },
-      { name: "Bar Chart", path: "/bar-chart", pro: false }
-    ]
+    // subItems: [
+    //   { name: "Line Chart", path: "/line-chart", pro: false },
+    //   { name: "Bar Chart", path: "/bar-chart", pro: false }
+    // ]
   },
 
 ]
@@ -125,8 +111,8 @@ const AdminSidebar = () => {
             <button
               onClick={() => handleSubmenuToggle(index, menuType)}
               className={`menu-item group ${openSubmenu?.type === menuType && openSubmenu?.index === index
-                  ? "menu-item-active"
-                  : "menu-item-inactive"
+                ? "menu-item-active"
+                : "text-gray-300 hover:bg-gray-800 hover:text-white"
                 } cursor-pointer ${!isExpanded && !isHovered
                   ? "lg:justify-center"
                   : "lg:justify-start"
@@ -134,8 +120,8 @@ const AdminSidebar = () => {
             >
               <span
                 className={`menu-item-icon-size  ${openSubmenu?.type === menuType && openSubmenu?.index === index
-                    ? "menu-item-icon-active"
-                    : "menu-item-icon-inactive"
+                  ? "menu-item-icon-active"
+                  : "text-gray-400 group-hover:text-white"
                   }`}
               >
                 {nav.icon}
@@ -146,9 +132,9 @@ const AdminSidebar = () => {
               {(isExpanded || isHovered || isMobileOpen) && (
                 <ChevronDownIcon
                   className={`ml-auto w-5 h-5 transition-transform duration-200 ${openSubmenu?.type === menuType &&
-                      openSubmenu?.index === index
-                      ? "rotate-180 text-brand-500"
-                      : ""
+                    openSubmenu?.index === index
+                    ? "rotate-180 text-brand-500"
+                    : ""
                     }`}
                 />
               )}
@@ -157,13 +143,13 @@ const AdminSidebar = () => {
             nav.path && (
               <Link
                 to={nav.path}
-                className={`menu-item group ${isActive(nav.path) ? "menu-item-active" : "menu-item-inactive"
+                className={`menu-item group ${isActive(nav.path) ? "menu-item-active" : "text-gray-300 hover:bg-gray-800 hover:text-white"
                   }`}
               >
                 <span
                   className={`menu-item-icon-size ${isActive(nav.path)
-                      ? "menu-item-icon-active"
-                      : "menu-item-icon-inactive"
+                    ? "menu-item-icon-active"
+                    : "text-gray-400 group-hover:text-white"
                     }`}
                 >
                   {nav.icon}
@@ -193,8 +179,8 @@ const AdminSidebar = () => {
                     <Link
                       to={subItem.path}
                       className={`menu-dropdown-item ${isActive(subItem.path)
-                          ? "menu-dropdown-item-active"
-                          : "menu-dropdown-item-inactive"
+                        ? "menu-dropdown-item-active"
+                        : "text-gray-300 hover:bg-gray-800 hover:text-white"
                         }`}
                     >
                       {subItem.name}
@@ -202,8 +188,8 @@ const AdminSidebar = () => {
                         {subItem.new && (
                           <span
                             className={`ml-auto ${isActive(subItem.path)
-                                ? "menu-dropdown-badge-active"
-                                : "menu-dropdown-badge-inactive"
+                              ? "menu-dropdown-badge-active"
+                              : "menu-dropdown-badge-inactive"
                               } menu-dropdown-badge`}
                           >
                             new
@@ -212,8 +198,8 @@ const AdminSidebar = () => {
                         {subItem.pro && (
                           <span
                             className={`ml-auto ${isActive(subItem.path)
-                                ? "menu-dropdown-badge-active"
-                                : "menu-dropdown-badge-inactive"
+                              ? "menu-dropdown-badge-active"
+                              : "menu-dropdown-badge-inactive"
                               } menu-dropdown-badge`}
                           >
                             pro
@@ -233,7 +219,7 @@ const AdminSidebar = () => {
 
   return (
     <aside
-      className={`fixed mt-16 flex flex-col lg:mt-0 top-0 px-5 left-0 bg-gray-900 border-gray-800 text-gray-900 h-screen transition-all duration-300 ease-in-out z-50 border-r border-gray-200 
+      className={`fixed mt-16 flex flex-col lg:mt-0 top-0 px-5 left-0 bg-gray-900 text-white h-screen transition-all duration-300 ease-in-out z-50 border-r border-gray-800 
         ${isExpanded || isMobileOpen
           ? "w-[290px]"
           : isHovered
@@ -283,8 +269,8 @@ const AdminSidebar = () => {
             <div>
               <h2
                 className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${!isExpanded && !isHovered
-                    ? "lg:justify-center"
-                    : "justify-start"
+                  ? "lg:justify-center"
+                  : "justify-start"
                   }`}
               >
                 {isExpanded || isHovered || isMobileOpen ? (
@@ -298,8 +284,8 @@ const AdminSidebar = () => {
             <div className="">
               <h2
                 className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${!isExpanded && !isHovered
-                    ? "lg:justify-center"
-                    : "justify-start"
+                  ? "lg:justify-center"
+                  : "justify-start"
                   }`}
               >
                 {isExpanded || isHovered || isMobileOpen ? (

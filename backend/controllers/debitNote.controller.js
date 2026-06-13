@@ -17,7 +17,7 @@ async function getPurchaseReturnLedgerId(conn, company_id) {
 
   // 2. Check if group exists, if not create it
   let [groups] = await conn.execute(
-    `SELECT id FROM groups_master WHERE name='Purchase Return' AND company_id=?`,
+    `SELECT id FROM groups_master WHERE system_code='PURCHASE_RETURN' AND company_id=?`,
     [company_id]
   );
 
@@ -26,8 +26,8 @@ async function getPurchaseReturnLedgerId(conn, company_id) {
     // Create Group under 'Direct Expenses' or similar if needed, 
     // but here we'll just create it as a primary group for now to unblock.
     const [res] = await conn.execute(
-      `INSERT INTO groups_master (name, company_id, parent_id) VALUES (?, ?, 0)`,
-      ['Purchase Return', company_id]
+      `INSERT INTO groups_master (name, company_id, parent_id, system_code) VALUES (?, ?, null, ?)`,
+      ['Purchase Return', company_id, 'PURCHASE_RETURN']
     );
     groupId = res.insertId;
   } else {
@@ -96,20 +96,20 @@ exports.createDebitNote = async (req, res) => {
       company.state?.toLowerCase().trim() === party.state?.toLowerCase().trim();
 
 
-// ✅ GET LEDGER ID AND NUMBER
-const [[ledger]] = await db.query(
-  `
+    // ✅ GET LEDGER ID AND NUMBER
+    const [[ledger]] = await db.query(
+      `
   SELECT id, ledger_number 
   FROM ledgers 
   WHERE party_id = ? 
   AND company_id = ?
   LIMIT 1
   `,
-  [Number(party_id), Number(company_id)]
-);
+      [Number(party_id), Number(company_id)]
+    );
 
-const ledger_id = ledger?.id || null;
-const ledger_number = ledger?.ledger_number || null;
+    const ledger_id = ledger?.id || null;
+    const ledger_number = ledger?.ledger_number || null;
 
     // INSERT HEADER
 
@@ -478,94 +478,197 @@ exports.getDebitNoteById = async (req, res) => {
   }
 };
 
+// exports.deleteDebitNote = async (req, res) => {
+//   const conn = await db.getConnection();
+
+//   try {
+//     let { debit_note_no } = req.params;
+//     if (!debit_note_no) {
+//       debit_note_no = req.query.debit_note_no;
+//     }
+//     if (Array.isArray(debit_note_no)) {
+//       debit_note_no = debit_note_no.join('/');
+//     }
+//     const company_id = req.body.company_id || req.query.company_id;
+
+//     await conn.beginTransaction();
+
+//     const [[dn]] = await conn.query(
+//       `
+//       SELECT purchase_invoice_no,total_amount
+//       FROM debit_note
+//       WHERE debit_note_no=?
+//       AND company_id=?
+//       AND status='active'
+//       `,
+//       [debit_note_no, company_id],
+//     );
+
+//     if (!dn) {
+//       throw new Error("Debit note not found");
+//     }
+
+//     await conn.execute(
+//       `
+//       UPDATE debit_note
+//       SET status='deleted',deleted_at=NOW()
+//       WHERE debit_note_no=?
+//       AND company_id=?
+//       `,
+//       [debit_note_no, company_id],
+//     );
+
+//     await conn.execute(
+//       `
+//       UPDATE debit_note_items
+//       SET status='deleted'
+//       WHERE debit_note_no=?
+//       `,
+//       [debit_note_no],
+//     );
+
+//     await conn.execute(
+//       `
+//       UPDATE ledger_entries
+//       SET status='deleted',deleted_at=NOW()
+//       WHERE source_type='DEBIT_NOTE'
+//       AND source_id=?
+//       AND company_id=?
+//       `,
+//       [debit_note_no, company_id],
+//     );
+
+//     await conn.execute(
+//       `
+//       UPDATE purchase_bill
+//       SET due_amount =
+//       GREATEST(due_amount - ?, 0)
+//       WHERE supplier_invoice_no =?
+//       AND company_id=?
+//       `,
+//       [dn.total_amount, dn.purchase_invoice_no, company_id],
+//     );
+
+//     await conn.commit();
+
+//     res.json({
+//       success: true,
+//       message: "Debit note deleted successfully",
+//     });
+//   } catch (err) {
+//     await conn.rollback();
+
+//     res.status(500).json({
+//       success: false,
+//       error: err.message,
+//     });
+//   } finally {
+//     conn.release();
+//   }
+// };
+
+
+
 exports.deleteDebitNote = async (req, res) => {
   const conn = await db.getConnection();
 
   try {
     let { debit_note_no } = req.params;
+
     if (!debit_note_no) {
       debit_note_no = req.query.debit_note_no;
     }
+
     if (Array.isArray(debit_note_no)) {
-      debit_note_no = debit_note_no.join('/');
+      debit_note_no = debit_note_no.join("/");
     }
-    const company_id = req.body.company_id || req.query.company_id;
+
+    // const company_id = req.body.company_id || req.query.company_id;
+    const company_id = req.body?.company_id || req.query?.company_id;
+    if (!company_id) {
+      return res.status(400).json({
+        success: false,
+        message: "company_id is required",
+      });
+    }
 
     await conn.beginTransaction();
 
     const [[dn]] = await conn.query(
       `
-      SELECT purchase_invoice_no,total_amount
+      SELECT purchase_invoice_no, total_amount
       FROM debit_note
-      WHERE debit_note_no=?
-      AND company_id=?
-      AND status='active'
+      WHERE debit_note_no = ?
+      AND company_id = ?
       `,
-      [debit_note_no, company_id],
+      [debit_note_no, company_id]
     );
 
     if (!dn) {
-      throw new Error("Debit note not found");
+      throw new Error("Debit Note not found");
     }
 
-    await conn.execute(
-      `
-      UPDATE debit_note
-      SET status='deleted',deleted_at=NOW()
-      WHERE debit_note_no=?
-      AND company_id=?
-      `,
-      [debit_note_no, company_id],
-    );
-
-    await conn.execute(
-      `
-      UPDATE debit_note_items
-      SET status='deleted'
-      WHERE debit_note_no=?
-      `,
-      [debit_note_no],
-    );
-
-    await conn.execute(
-      `
-      UPDATE ledger_entries
-      SET status='deleted',deleted_at=NOW()
-      WHERE source_type='DEBIT_NOTE'
-      AND source_id=?
-      AND company_id=?
-      `,
-      [debit_note_no, company_id],
-    );
-
+    // Restore purchase bill due amount
     await conn.execute(
       `
       UPDATE purchase_bill
-      SET due_amount =
-      GREATEST(due_amount - ?, 0)
-      WHERE supplier_invoice_no =?
-      AND company_id=?
+      SET due_amount = due_amount + ?
+      WHERE supplier_invoice_no = ?
+      AND company_id = ?
       `,
-      [dn.total_amount, dn.purchase_invoice_no, company_id],
+      [dn.total_amount, dn.purchase_invoice_no, company_id]
+    );
+
+    // Delete ledger entries
+    await conn.execute(
+      `
+      DELETE FROM ledger_entries
+      WHERE source_type = 'DEBIT_NOTE'
+      AND source_id = ?
+      AND company_id = ?
+      `,
+      [debit_note_no, company_id]
+    );
+
+    // Delete debit note items
+    await conn.execute(
+      `
+      DELETE FROM debit_note_items
+      WHERE debit_note_no = ?
+      `,
+      [debit_note_no]
+    );
+
+    // Delete debit note header
+    await conn.execute(
+      `
+      DELETE FROM debit_note
+      WHERE debit_note_no = ?
+      AND company_id = ?
+      `,
+      [debit_note_no, company_id]
     );
 
     await conn.commit();
 
-    res.json({
+    return res.json({
       success: true,
-      message: "Debit note deleted successfully",
+      message: "Debit Note permanently deleted"
     });
+
   } catch (err) {
     await conn.rollback();
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      error: err.message,
+      error: err.message
     });
+
   } finally {
     conn.release();
   }
 };
+
 
 exports.updateDebitNote = async (req, res) => {
   const conn = await db.getConnection();
@@ -1219,8 +1322,8 @@ exports.exportDebitNotesJson = async (req, res) => {
           "OthChrg": 0,
           "TotItemVal": totItemVal,
           "BchDtls": {
-             "Nm": "ABC123",
-             "ExpDt": "31/12/2026"
+            "Nm": "ABC123",
+            "ExpDt": "31/12/2026"
           }
         };
       });
@@ -1234,51 +1337,51 @@ exports.exportDebitNotesJson = async (req, res) => {
       return {
         "Version": "1.01",
         "TranDtls": {
-           "TaxSch": "GST",
-           "SupTyp": "B2B",
-           "RegRev": "N",
-           "IgstOnIntra": "N"
+          "TaxSch": "GST",
+          "SupTyp": "B2B",
+          "RegRev": "N",
+          "IgstOnIntra": "N"
         },
         "DocDtls": {
-           "Typ": docType,
-           "No": note.debit_note_no,
-           "Dt": formatJsonDate(note.voucher_date)
+          "Typ": docType,
+          "No": note.debit_note_no,
+          "Dt": formatJsonDate(note.voucher_date)
         },
         "SellerDtls": {
-           "Gstin": sellerGst,
-           "LglNm": company.name || "",
-           "TrdNm": company.name || "",
-           "Addr1": company.address || "",
-           "Addr2": "...",
-           "Loc": company.city || "",
-           "Pin": Number(company.pincode || 0),
-           "Stcd": sellerGst.substring(0, 2),
-           "Ph": company.contact_no || "",
-           "Em": company.email || ""
+          "Gstin": sellerGst,
+          "LglNm": company.name || "",
+          "TrdNm": company.name || "",
+          "Addr1": company.address || "",
+          "Addr2": "...",
+          "Loc": company.city || "",
+          "Pin": Number(company.pincode || 0),
+          "Stcd": sellerGst.substring(0, 2),
+          "Ph": company.contact_no || "",
+          "Em": company.email || ""
         },
         "BuyerDtls": {
-           "Gstin": buyerGst,
-           "LglNm": note.party_name || "",
-           "TrdNm": note.party_name || "",
-           "Pos": buyerGst.substring(0, 2) || sellerGst.substring(0, 2),
-           "Addr1": (note.party_address || "").substring(0, 100),
-           "Loc": note.party_city || "",
-           "Pin": Number(note.party_pincode || 0),
-           "Stcd": buyerGst.substring(0, 2) || sellerGst.substring(0, 2)
+          "Gstin": buyerGst,
+          "LglNm": note.party_name || "",
+          "TrdNm": note.party_name || "",
+          "Pos": buyerGst.substring(0, 2) || sellerGst.substring(0, 2),
+          "Addr1": (note.party_address || "").substring(0, 100),
+          "Loc": note.party_city || "",
+          "Pin": Number(note.party_pincode || 0),
+          "Stcd": buyerGst.substring(0, 2) || sellerGst.substring(0, 2)
         },
         "ItemList": itemsList,
         "ValDtls": {
-           "AssVal": assVal,
-           "CgstVal": cgstVal,
-           "SgstVal": sgstVal,
-           "IgstVal": igstVal,
-           "CesVal": 0,
-           "StCesVal": 0,
-           "Discount": 0,
-           "OthChrg": 0,
-           "RndOffAmt": 0,
-           "TotInvVal": totInvVal,
-           "TotInvValFc": 0
+          "AssVal": assVal,
+          "CgstVal": cgstVal,
+          "SgstVal": sgstVal,
+          "IgstVal": igstVal,
+          "CesVal": 0,
+          "StCesVal": 0,
+          "Discount": 0,
+          "OthChrg": 0,
+          "RndOffAmt": 0,
+          "TotInvVal": totInvVal,
+          "TotInvValFc": 0
         }
       };
     }
@@ -1309,7 +1412,7 @@ exports.exportDebitNotesJson = async (req, res) => {
         [dn.debit_note_no]
       );
       dn.items = items;
-      
+
       formattedNotes.push(mapToEInvoiceSchema(dn, company, "DBN"));
     }
 

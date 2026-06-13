@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { toast } from "react-toastify"
+import { adminLogin } from "../../api"
 
 export default function AdminLogin() {
   const navigate = useNavigate()
@@ -16,37 +17,44 @@ export default function AdminLogin() {
     setForm(prev => ({ ...prev, [name]: value }))
   }
 
-const handleLogin = async e => {
-  e.preventDefault()
+  const handleLogin = async e => {
+    e.preventDefault()
 
-  if (!form.login_id) {
-    toast.error("Login ID is required")
-    return
+    if (!form.login_id) {
+      toast.error("Login ID is required")
+      return
+    }
+
+    if (!form.password) {
+      toast.error("Password is required")
+      return
+    }
+
+    try {
+      setLoading(true)
+
+      const response = await adminLogin({
+        login_id: form.login_id,
+        password: form.password
+      })
+
+      if (response.data.success) {
+        // ✅ ADMIN TOKEN SET KARO
+        localStorage.setItem("admin_token", "logged_in")
+        localStorage.setItem("admin_data", JSON.stringify(response.data.data))
+
+        toast.success(response.data.message || "Admin login successful")
+
+        // ✅ ADMIN DASHBOARD PAR REDIRECT
+        navigate("/admin")
+      }
+    } catch (err) {
+      console.error(err)
+      toast.error(err.response?.data?.message || "Invalid Login ID or Password")
+    } finally {
+      setLoading(false)
+    }
   }
-
-  if (!form.password) {
-    toast.error("Password is required")
-    return
-  }
-
-  try {
-    setLoading(true)
-
-    // ✅ ADMIN TOKEN SET KARO
-    localStorage.setItem("admin_token", "logged_in")
-
-    toast.success("Admin login successful")
-
-    // ✅ ADMIN DASHBOARD PAR REDIRECT
-    navigate("/admin")
-  } catch (err) {
-    toast.error("Invalid Login ID or Password")
-  } finally {
-    setLoading(false)
-  }
-}
-
-
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">

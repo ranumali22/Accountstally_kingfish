@@ -113,92 +113,111 @@ exports.createCompany = async (req, res) => {
 };
 
 async function createDefaultGroups(companyId) {
-  const groups = [
-    // ===== ASSETS =====
-    ["Current Assets", "Primary", "ASSET"],
-    ["Bank Accounts", "Current Assets", "ASSET"],
-    ["Bank OD A/c", "Current Assets", "ASSET"],
-    ["Bank OCC A/c", "Current Assets", "ASSET"],
-    ["Cash-in-Hand", "Current Assets", "ASSET"],
-    ["Cash", "Cash-in-Hand", "ASSET"],
-    ["Deposits (Asset)", "Current Assets", "ASSET"],
-    ["Loans & Advances (Asset)", "Current Assets", "ASSET"],
-    ["Stock-in-Hand", "Current Assets", "ASSET"],
-    ["Sundry Debtors", "Current Assets", "ASSET"],
+  const conn = await db.getConnection();
+  try {
+    await conn.beginTransaction();
 
-    ["Fixed Assets", "Primary", "ASSET"],
-    ["Investments", "Primary", "ASSET"],
+    const groups = [
+      // format: [name, parent_system_code, nature, system_code]
+      // ===== ASSETS =====
+      ["Current Assets", "PRIMARY", "ASSET", "CURRENT_ASSETS"],
+      ["Bank Accounts", "CURRENT_ASSETS", "ASSET", "BANK_ACCOUNTS"],
+      ["Bank OD A/c", "CURRENT_ASSETS", "ASSET", "BANK_OD_AC"],
+      ["Bank OCC A/c", "CURRENT_ASSETS", "ASSET", "BANK_OCC_AC"],
+      ["Cash-in-Hand", "CURRENT_ASSETS", "ASSET", "CASH_IN_HAND"],
+      ["Cash", "CASH_IN_HAND", "ASSET", "CASH"],
+      ["Deposits (Asset)", "CURRENT_ASSETS", "ASSET", "DEPOSITS_ASSET"],
+      ["Loans & Advances (Asset)", "CURRENT_ASSETS", "ASSET", "LOANS_ADVANCES_ASSET"],
+      ["Stock-in-Hand", "CURRENT_ASSETS", "ASSET", "STOCK_IN_HAND"],
+      ["Sundry Debtors", "CURRENT_ASSETS", "ASSET", "SUNDRY_DEBTORS"],
 
-    // ===== LIABILITIES =====
-    ["Capital Account", "Primary", "LIABILITY"],
+      ["Fixed Assets", "PRIMARY", "ASSET", "FIXED_ASSETS"],
+      ["Investments", "PRIMARY", "ASSET", "INVESTMENTS"],
 
-    ["Current Liabilities", "Primary", "LIABILITY"],
-    ["Duties & Taxes", "Current Liabilities", "LIABILITY"],
-    ["GST Payable", "Duties & Taxes", "LIABILITY"],
+      // ===== LIABILITIES =====
+      ["Capital Account", "PRIMARY", "LIABILITY", "CAPITAL_ACCOUNT"],
 
-    ["Provisions", "Current Liabilities", "LIABILITY"],
-    ["Sundry Creditors", "Current Liabilities", "LIABILITY"],
+      ["Current Liabilities", "PRIMARY", "LIABILITY", "CURRENT_LIABILITIES"],
+      ["Duties & Taxes", "CURRENT_LIABILITIES", "LIABILITY", "DUTIES_TAXES"],
+      ["GST Payable", "DUTIES_TAXES", "LIABILITY", "GST_PAYABLE"],
 
-    ["Loans (Liability)", "Primary", "LIABILITY"],
-    ["Secured Loans", "Loans (Liability)", "LIABILITY"],
-    ["Unsecured Loans", "Loans (Liability)", "LIABILITY"],
+      ["Provisions", "CURRENT_LIABILITIES", "LIABILITY", "PROVISIONS"],
+      ["Sundry Creditors", "CURRENT_LIABILITIES", "LIABILITY", "SUNDRY_CREDITORS"],
 
-    ["Reserves & Surplus", "Primary", "LIABILITY"],
-    ["Retained Earnings", "Reserves & Surplus", "LIABILITY"],
+      ["Loans (Liability)", "PRIMARY", "LIABILITY", "LOANS_LIABILITY"],
+      ["Secured Loans", "LOANS_LIABILITY", "LIABILITY", "SECURED_LOANS"],
+      ["Unsecured Loans", "LOANS_LIABILITY", "LIABILITY", "UNSECURED_LOANS"],
 
-    ["Suspense A/c", "Primary", "LIABILITY"],
+      ["Reserves & Surplus", "PRIMARY", "LIABILITY", "RESERVES_SURPLUS"],
+      ["Retained Earnings", "RESERVES_SURPLUS", "LIABILITY", "RETAINED_EARNINGS"],
 
-    // ===== GST ASSET =====
-    ["GST Receivable", "Current Assets", "ASSET"],
+      ["Suspense A/c", "PRIMARY", "LIABILITY", "SUSPENSE_AC"],
 
-    // ===== INCOME =====
-    ["Income", "Primary", "INCOME"],
+      // ===== GST ASSET =====
+      ["GST Receivable", "CURRENT_ASSETS", "ASSET", "GST_RECEIVABLE"],
 
-    ["Direct Incomes", "Income", "INCOME"],
-    ["Sales Accounts", "Direct Incomes", "INCOME"],
-    ["Sales Return", "Direct Incomes", "INCOME"],
+      // ===== INCOME =====
+      ["Income", "PRIMARY", "INCOME", "INCOME"],
 
-    ["Indirect Incomes", "Income", "INCOME"],
-    ["Discount Received", "Indirect Incomes", "INCOME"],
+      ["Direct Incomes", "INCOME", "INCOME", "DIRECT_INCOMES"],
+      ["Sales Accounts", "DIRECT_INCOMES", "INCOME", "SALES_ACCOUNTS"],
+      ["Sales Return", "DIRECT_INCOMES", "INCOME", "SALES_RETURN"],
 
-    // ===== EXPENSE =====
-    ["Expenses", "Primary", "EXPENSE"],
+      ["Indirect Incomes", "INCOME", "INCOME", "INDIRECT_INCOMES"],
+      ["Discount Received", "INDIRECT_INCOMES", "INCOME", "DISCOUNT_RECEIVED"],
 
-    ["Direct Expenses", "Expenses", "EXPENSE"],
-    ["Purchase Accounts", "Direct Expenses", "EXPENSE"],
-    ["Purchase Return", "Direct Expenses", "EXPENSE"],
+      // ===== EXPENSE =====
+      ["Expenses", "PRIMARY", "EXPENSE", "EXPENSES"],
 
-    ["Indirect Expenses", "Expenses", "EXPENSE"],
-    ["Discount Allowed", "Indirect Expenses", "EXPENSE"],
+      ["Direct Expenses", "EXPENSES", "EXPENSE", "DIRECT_EXPENSES"],
+      ["Purchase Accounts", "DIRECT_EXPENSES", "EXPENSE", "PURCHASE_ACCOUNTS"],
+      ["Purchase Return", "DIRECT_EXPENSES", "EXPENSE", "PURCHASE_RETURN"],
 
-    ["Misc. Expenses (ASSET)", "Expenses", "EXPENSE"],
-  ];
+      ["Indirect Expenses", "EXPENSES", "EXPENSE", "INDIRECT_EXPENSES"],
+      ["Discount Allowed", "INDIRECT_EXPENSES", "EXPENSE", "DISCOUNT_ALLOWED"],
 
-  const [existing] = await db.query(
-    "SELECT id, name FROM groups_master WHERE company_id = ?",
-    [companyId]
-  );
+      ["Misc. Expenses (ASSET)", "EXPENSES", "EXPENSE", "MISC_EXPENSES_ASSET"],
+    ];
 
-  const groupMap = {};
-  existing.forEach((g) => {
-    groupMap[g.name] = g.id;
-  });
-
-  for (const [name, parentName, nature] of groups) {
-    if (groupMap[name]) continue;
-
-    const parentId =
-      parentName === "Primary"
-        ? null
-        : groupMap[parentName] || null;
-
-    const [res] = await db.query(
-      `INSERT INTO groups_master (company_id, name, parent_id, nature)
-       VALUES (?, ?, ?, ?)`,
-      [companyId, name, parentId, nature]
+    const [existing] = await conn.query(
+      "SELECT id, system_code, name FROM groups_master WHERE company_id = ?",
+      [companyId]
     );
 
-    groupMap[name] = res.insertId;
+    const groupMap = {};
+    existing.forEach((g) => {
+      // Fallback to mapping by name if system_code hasn't been backfilled yet
+      if (g.system_code) {
+        groupMap[g.system_code] = g.id;
+      } else {
+        groupMap[g.name] = g.id;
+      }
+    });
+
+    for (const [name, parentSystemCode, nature, systemCode] of groups) {
+      if (groupMap[systemCode] || groupMap[name]) continue;
+
+      const parentId =
+        parentSystemCode === "PRIMARY"
+          ? null
+          : groupMap[parentSystemCode] || null;
+
+      const [res] = await conn.query(
+        `INSERT INTO groups_master (company_id, name, parent_id, nature, system_code)
+         VALUES (?, ?, ?, ?, ?)`,
+        [companyId, name, parentId, nature, systemCode]
+      );
+
+      groupMap[systemCode] = res.insertId;
+    }
+
+    await conn.commit();
+  } catch (error) {
+    await conn.rollback();
+    console.error("❌ createDefaultGroups error:", error);
+    throw error;
+  } finally {
+    conn.release();
   }
 }
 
@@ -266,8 +285,6 @@ exports.companyLogin = async (req, res) => {
         message: "Invalid Login ID or Password",
       });
     }
-
-    await createDefaultGroups(company.id);
 
     const token = jwt.sign(
       { company_id: company.id, role: "company" },
